@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="hu" class="antialiased">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Irodalom Mester</title>
+
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            50: '#f5f5f7',
+                            100: '#e5e5e7',
+                            200: '#d1d1d6',
+                            300: '#c7c7cc',
+                            400: '#aeaeb2',
+                            500: '#8e8e93',
+                            600: '#636366',
+                            700: '#48484a',
+                            800: '#3a3a3c',
+                            900: '#2c2c2e',
+                            950: '#1c1c1e',
+                        },
+                        blue: {
+                            ios: '#007AFF',
+                        },
+                        green: {
+                            ios: '#34C759',
+                        },
+                        red: {
+                            ios: '#FF3B30',
+                        },
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba( 31, 38, 135, 0.07 )',
+                        'glass-dark': '0 8px 32px 0 rgba( 0, 0, 0, 0.3 )',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'enter': 'enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        enter: {
+                            '0%': { opacity: 0, transform: 'scale(0.95) translateY(10px)' },
+                            '100%': { opacity: 1, transform: 'scale(1) translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f2f2f7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .dark body {
+            background-color: #000;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass {
+            background: rgba(28, 28, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .draggable-source {
+            cursor: grab;
+        }
+
+        .draggable-source:active {
+            cursor: grabbing;
+        }
+
+        /* Hide highlight on mobile */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="text-apple-900 dark:text-white transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // --- ICONS (Lucide) ---
+        const Icons = {
+            BookOpen: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>,
+            Brain: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></svg>,
+            Check: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+            X: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            Moon: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>,
+            Sun: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>,
+            ChevronRight: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>,
+            Infinity: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" /></svg>,
+            Clock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+            Trophy: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>,
+            ArrowUp: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>,
+            ArrowDown: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>,
+        };
+
+        // --- DATA ---
+        const DB = {
+            authors: [
+                { id: 'a1', name: "Homérosz", era: "Ókor", style: "Epika" },
+                { id: 'a2', name: "Szophoklész", era: "Ókor", style: "Dráma" },
+                { id: 'a3', name: "Vergilius", era: "Ókor", style: "Epika" },
+                { id: 'a4', name: "Dante Alighieri", era: "Középkor", style: "Epika" },
+                { id: 'a5', name: "François Villon", era: "Középkor", style: "Líra" },
+                { id: 'a6', name: "Janus Pannonius", era: "Reneszánsz", style: "Líra" },
+                { id: 'a7', name: "Balassi Bálint", era: "Reneszánsz", style: "Líra" },
+                { id: 'a8', name: "Zrínyi Miklós", era: "Barokk", style: "Epika" },
+                { id: 'a9', name: "Molière", era: "Klasszicizmus", style: "Dráma" },
+                { id: 'a10', name: "Csokonai Vitéz Mihály", era: "Felvilágosodás", style: "Líra" },
+                { id: 'a11', name: "Katona József", era: "Romantika", style: "Dráma" },
+                { id: 'a12', name: "Kölcsey Ferenc", era: "Romantika", style: "Líra" },
+                { id: 'a13', name: "Vörösmarty Mihály", era: "Romantika", style: "Líra/Epika" },
+                { id: 'a14', name: "Petőfi Sándor", era: "Romantika", style: "Líra/Epika" },
+                { id: 'a15', name: "Arany János", era: "Realizmus", style: "Epika/Ballada" },
+                { id: 'a16', name: "Ady Endre", era: "Modernség", style: "Líra" },
+                { id: 'a17', name: "Babits Mihály", era: "Modernség", style: "Líra/Epika" },
+                { id: 'a18', name: "Kosztolányi Dezső", era: "Modernség", style: "Líra/Epika" },
+                { id: 'a19', name: "Juhász Gyula", era: "Modernség", style: "Líra" },
+                { id: 'a20', name: "Tóth Árpád", era: "Modernség", style: "Líra" },
+                { id: 'a21', name: "Móricz Zsigmond", era: "Realizmus/Modernség", style: "Epika" },
+                { id: 'a22', name: "József Attila", era: "Modernség", style: "Líra" },
+                { id: 'a23', name: "Radnóti Miklós", era: "Modernség", style: "Líra" },
+                { id: 'a24', name: "Örkény István", era: "Kortárs", style: "Dráma/Epika" },
+                { id: 'a26', name: "Giovanni Boccaccio", era: "Reneszánsz", style: "Epika" },
+                { id: 'a27', name: "William Shakespeare", era: "Reneszánsz", style: "Dráma" },
+                { id: 'a28', name: "Madách Imre", era: "Romantika", style: "Dráma" },
+                { id: 'a29', name: "Jókai Mór", era: "Romantika", style: "Epika" },
+                { id: 'a30', name: "Mikszáth Kálmán", era: "Realizmus", style: "Epika" },
+                { id: 'a31', name: "Herczeg Ferenc", era: "Konzervatív modernség", style: "Epika/Dráma" },
+                { id: 'a36', name: "Vajda János", era: "Modernség előfutára", style: "Líra" },
+                { id: 'a37', name: "Krúdy Gyula", era: "Modernség", style: "Epika" }
+            ],
+            works: [
+                { id: 'w1', title: "Íliász", authorId: 'a1', genre: "Eposz", characters: ["Akhilleusz", "Hektór", "Priamosz"] },
+                { id: 'w2', title: "Antigoné", authorId: 'a2', genre: "Tragédia", characters: ["Antigoné", "Iszméné", "Kreón", "Haimón"] },
+                { id: 'w4', title: "Isteni színjáték", authorId: 'a4', genre: "Elbeszélő költemény", characters: ["Dante", "Vergilius", "Beatrice"] },
+                { id: 'w7', title: "Szigeti veszedelem", authorId: 'a8', genre: "Eposz", characters: ["Zrínyi Miklós", "Szulejmán"] },
+                { id: 'w8', title: "Tartuffe", authorId: 'a9', genre: "Komédia", characters: ["Tartuffe", "Orgon", "Elmira"] },
+                { id: 'w9', title: "Bánk bán", authorId: 'a11', genre: "Tragédia", characters: ["Bánk bán", "Gertrudis", "Melinda", "Tiborc"] },
+                { id: 'w10', title: "Csongor és Tünde", authorId: 'a13', genre: "Drámai költemény", characters: ["Csongor", "Tünde", "Mirigy", "Ledér"] },
+                { id: 'w11', title: "Toldi", authorId: 'a15', genre: "Elbeszélő költemény", characters: ["Toldi Miklós", "Toldi György", "Bence"] },
+                { id: 'w14', title: "János vitéz", authorId: 'a14', genre: "Elbeszélő költemény", characters: ["Kukorica Jancsi", "Iluska", "A francia király"] },
+                { id: 'w15', title: "Az apostol", authorId: 'a14', genre: "Elbeszélő költemény", characters: ["Szilveszter"] },
+                { id: 'w16', title: "A walesi bárdok", authorId: 'a15', genre: "Ballada", characters: ["Edward király", "Montgomery"] },
+                { id: 'w18', title: "Jónás könyve", authorId: 'a17', genre: "Elbeszélő költemény", characters: ["Jónás", "Az Úr"] },
+                { id: 'w19', title: "Édes Anna", authorId: 'a18', genre: "Regény", characters: ["Édes Anna", "Vizy Kornél", "Vizyné", "Patikárius Jancsi"] },
+                { id: 'w26', title: "Tóték", authorId: 'a24', genre: "Tragikomédia", characters: ["Tót Lajos", "Az őrnagy", "Ágika"] },
+                { id: 'w29', title: "Légy jó mindhalálig", authorId: 'a21', genre: "Regény", characters: ["Nyilas Misi", "Valkay tanár úr"] },
+                { id: 'w30', title: "Odüsszeia", authorId: 'a1', genre: "Eposz", characters: ["Odüsszeusz", "Pénelopé", "Télemakhosz"] },
+                { id: 'w32', title: "Rómeó és Júlia", authorId: 'a27', genre: "Tragédia", characters: ["Rómeó", "Júlia", "Tybalt", "Mercutio"] },
+                { id: 'w33', title: "Az ember tragédiája", authorId: 'a28', genre: "Drámai költemény", characters: ["Ádám", "Éva", "Lucifer"] },
+                { id: 'w34', title: "Az arany ember", authorId: 'a29', genre: "Regény", characters: ["Timár Mihály", "Tímea", "Noémi", "Krisztyán Tódor"] },
+                { id: 'w35', title: "Beszterce ostroma", authorId: 'a30', genre: "Regény", characters: ["Pongrácz István", "Apolka"] },
+                { id: 'w36', title: "Az élet kapuja", authorId: 'a31', genre: "Történelmi kisregény", characters: ["Bakócz Tamás", "II. Gyula pápa"] },
+                { id: 'w41', title: "A fösvény", authorId: 'a9', genre: "Komédia", characters: ["Harpagon", "Cléante", "Élise"] },
+                { id: 'w44', title: "Úri muri", authorId: 'a21', genre: "Regény", characters: ["Szakhmáry Zoltán", "Rozika"] },
+                { id: 'w46', title: "Szindbád", authorId: 'a37', genre: "Novellaciklus", characters: ["Szindbád"] },
+                { id: 'w47', title: "A Noszty fiú esete Tóth Marival", authorId: 'a30', genre: "Regény", characters: ["Noszty Feri", "Tóth Mari", "Tóth Mihály"] },
+                { id: 'w48', title: "Jó palócok", authorId: 'a30', genre: "Novelláskötet", characters: ["Bede Anna", "Szűcs Pali"] },
+                { id: 'w5', title: "Nagy Testamentum", authorId: 'a5', genre: "Testamentum" },
+                { id: 'w6', title: "Pannónia dicsérete", authorId: 'a6', genre: "Epigramma" },
+                { id: 'w12', title: "Himnusz", authorId: 'a12', genre: "Himnusz" },
+                { id: 'w13', title: "Szózat", authorId: 'a13', genre: "Óda" },
+                { id: 'w17', title: "Új versek", authorId: 'a16', genre: "Verseskötet" },
+                { id: 'w20', title: "Esti kérdés", authorId: 'a17', genre: "Filozófiai költemény" },
+                { id: 'w21', title: "Hajnali részegség", authorId: 'a18', genre: "Rapszódia" },
+                { id: 'w23', title: "Tiszta szívvel", authorId: 'a22', genre: "Ars poetica" },
+                { id: 'w24', title: "Óda", authorId: 'a22', genre: "Óda" },
+                { id: 'w25', title: "Hetedik ecloga", authorId: 'a23', genre: "Ecloga" },
+                { id: 'w27', title: "A vén cigány", authorId: 'a13', genre: "Rapszódia" },
+                { id: 'w28', title: "Szeptember végén", authorId: 'a14', genre: "Elégia" },
+                { id: 'w43', title: "Toldi estéje", authorId: 'a15', genre: "Elbeszélő költemény", characters: ["Toldi Miklós", "Bence", "Lajos király"] },
+                { id: 'w45', title: "A vaáli erdőben", authorId: 'a36', genre: "Dal" },
+                { id: 'w3', title: "Aeneis", authorId: 'a3', genre: "Eposz", characters: ["Aeneas", "Dido"] }
+            ],
+            definitions: [
+                { id: 'd1', term: "In medias res", def: "A dolgok közepébe vágó kezdés." },
+                { id: 'd2', term: "Hexameter", def: "Hat verslábból álló sorfajta." },
+                { id: 'd3', term: "Toposz", def: "Közismert, visszatérő költői kép." },
+                { id: 'd4', term: "Epigramma", def: "Rövid, tömör, csattanós költemény." },
+                { id: 'd5', term: "Ars poetica", def: "Költői hitvallás, a költészet céljának megfogalmazása." },
+                { id: 'd6', term: "Allegória", def: "Elvont fogalom megszemélyesítése." },
+                { id: 'd7', term: "Ballada", def: "Tragikus történetet elbeszélő lírai mű." },
+                { id: 'd8', term: "Metafora", def: "Két fogalom azonosítása közös jegyek alapján." },
+                { id: 'd9', term: "Szinesztézia", def: "Különböző érzékterületek összekapcsolása." },
+                { id: 'd10', term: "Oximoron", def: "Egymást kizáró fogalmak összekapcsolása." },
+                { id: 'd11', term: "Alliteráció", def: "Szókezdő hangok ismétlődése." },
+                { id: 'd12', term: "Enjambement", def: "Áthajlás, a mondat nem ér véget a sor végén." },
+                { id: 'd13', term: "Himnusz", def: "Istenhez szóló fohász, dicsőítő ének." },
+                { id: 'd14', term: "Ecloga", def: "Pásztori költemény, párbeszédes forma." },
+                { id: 'd15', term: "Novella", def: "Rövid, tömör epikai műfaj, csattanós lezárással." },
+                { id: 'd16', term: "Deus ex machina", def: "Isteni beavatkozás, váratlan fordulat." },
+                { id: 'd17', term: "Propozíció", def: "Témamegjelölés (eposzi kellék)." },
+                { id: 'd18', term: "Invokáció", def: "Segélykérés (eposzi kellék)." },
+                { id: 'd19', term: "Enumeráció", def: "Seregszemle (eposzi kellék)." },
+                { id: 'd20', term: "Groteszk", def: "A komikum és a tragikum bizarr ötvözete." },
+                { id: 'd22', term: "Intertextualitás", def: "Szövegköziség, szövegek közötti kapcsolat." },
+                { id: 'd23', term: "Szonett", def: "14 sorból álló, kötött rímképletű versforma." },
+                { id: 'd24', term: "Rapszódia", def: "Szenvedélyes, csapongó hangvételű lírai műfaj." },
+                { id: 'd25', term: "Elégia", def: "Borongós, bánatos hangvételű költemény." },
+                { id: 'd26', term: "Bimetrikus verselés", def: "Időmértékes és ütemhangsúlyos ritmus egyszerre." },
+                { id: 'd27', term: "Homo aestheticus", def: "A szépséget mindennél többre tartó embereszmény." },
+                { id: 'd28', term: "Anekdota", def: "Rövid, csattanós, mulatságos történet." },
+                { id: 'd29', term: "Analitikus dráma", def: "A cselekmény a múlt feltárására épül." },
+                { id: 'd30', term: "Falanszter", def: "Az ember tragédiájának utópisztikus színe." }
+            ],
+            eras: [
+                "Ókor", "Középkor", "Reneszánsz", "Barokk", "Klasszicizmus", "Felvilágosodás", "Romantika", "Realizmus", "Modernség"
+            ],
+            poems: [
+                { id: 'p1', title: "Himnusz", author: "Kölcsey Ferenc", text: "Isten, áldd meg a magyart / Jó kedvvel, bőséggel, / Nyújts feléje védő kart, / Ha küzd ellenséggel" },
+                { id: 'p2', title: "Szózat", author: "Vörösmarty Mihály", text: "Hazádnak rendületlenül / Légy híve, ó magyar; / Bölcsőd az s majdan sírod is, / Mely ápol s eltakar." },
+                { id: 'p3', title: "Nemzeti dal", author: "Petőfi Sándor", text: "Talpra magyar, hí a haza! / Itt az idő, most vagy soha! / Rabok legyünk vagy szabadok? / Ez a kérdés, válasszatok!" },
+                { id: 'p4', title: "Szeptember végén", author: "Petőfi Sándor", text: "Még nyílnak a völgyben a kerti virágok, / Még zöldel a nyárfa az ablak előtt, / De látod amottan a téli világot? / Már hó takarja el a bérci tetőt." },
+                { id: 'p5', title: "Tiszta szívvel", author: "József Attila", text: "Nincsen apám, se anyám, / se istenem, se hazám, / se bölcsőm, se szemfedőm, / se csókom, se szeretőm." },
+                { id: 'p6', title: "Anyám tyúkja", author: "Petőfi Sándor", text: "Ej mi a kő! tyúkanyó, kend / A szobában lakik itt bent? / Lám, csak jó az isten, jót ád, / Hogy fölvitte a kend dolgát!" },
+                { id: 'p7', title: "A walesi bárdok", author: "Arany János", text: "Edward király, angol király / Léptet fakó lován: / Hadd látom, úgymond, mennyit ér / A velszi tartomány." },
+                { id: 'p8', title: "Góg és Magóg fia vagyok én...", author: "Ady Endre", text: "Hiába döngetek kaput, falat, / S mégis megkérdem tőletek: / Szabad-e sírni a Kárpátok alatt?" },
+                { id: 'p9', title: "Őrizem a szemed", author: "Ady Endre", text: "Már vénülő kezemmel / Fogom meg a kezedet, / Már vénülő szememmel / Őrizem a szemedet." },
+                { id: 'p10', title: "Altató", author: "József Attila", text: "Lehunyja kék szemét az ég, / lehunyja sok szemét a ház, / dunna alatt alszik a rét - / aludj el szépen, kis Balázs." },
+                { id: 'p12', title: "Jónás imája", author: "Babits Mihály", text: "Hozzám már hűtlen lettek a szavak, / vagy én lettem mint túláradt patak / oly tétova és céltalan?" },
+                { id: 'p13', title: "A Reményhez", author: "Csokonai Vitéz Mihály", text: "Főldiekkel játszó / Égi tűnemény, / Istenségnek látszó / Csalfa, vak Remény!" },
+                { id: 'p14', title: "Füstbe ment terv", author: "Petőfi Sándor", text: "Egész úton hazafelé / Azon gondolkodám: / Miként fogom szólítani / Rég nem látott anyám?" },
+                { id: 'p16', title: "Pannónia dicsérete", author: "Janus Pannonius", text: "Eddig Itália földjén termettek csak a könyvek, / S most Pannónia is ontja a szép dalokat. / Sokra becsülnek már, a hazám is büszke lehet rám, / Szellemem egyre dicsőbb, általa híres e föld!" },
+                { id: 'p17', title: "A közelítő tél", author: "Berzsenyi Dániel", text: "Hervad már ligetünk, s díszei hullanak, / Tarlott bokrai közt sárga levél zörög. / Nincs rózsás labyrinth, s balzsamos illatok / Közt nem lengedez a Zephyr." }
+            ],
+            literaryExamples: [
+                { id: 'ex1', term: "Metafora", example: "Szívemnek gyöngyháza, lelkem Iluskája", source: "Petőfi: János vitéz" },
+                { id: 'ex2', term: "Megszemélyesítés", example: "Lehunyja kék szemét az ég", source: "József Attila: Altató" },
+                { id: 'ex3', term: "Alliteráció", example: "Talpra magyar, hí a haza", source: "Petőfi: Nemzeti dal" },
+                { id: 'ex4', term: "Szinesztézia", example: "Édes csöndje a téli éjszakáknak", source: "Ady Endre" },
+                { id: 'ex5', term: "Hasonlat", example: "Mint túláradt patak", source: "Babits: Jónás imája" },
+                { id: 'ex6', term: "Metafora", example: "Lelkem Iluskája", source: "Petőfi: János vitéz" },
+                { id: 'ex7', term: "Megszemélyesítés", example: "Lehunyja sok szemét a ház", source: "József Attila: Altató" },
+                { id: 'ex8', term: "Enumeráció", example: "Nincsen apám, se anyám, se istenem, se hazám", source: "József Attila: Tiszta szívvel" }
+            ],
+            characterDescriptions: [
+                { id: 'ch1', description: "Fiatal pásztorlány, Csongor szerelme", answer: "Tünde", workId: 'w10' },
+                { id: 'ch2', description: "A magyar sereg legerősebb vitéze, György testvére", answer: "Toldi Miklós", workId: 'w11' },
+                { id: 'ch3', description: "Trója hőse, Priamosz fia", answer: "Hektór", workId: 'w1' },
+                { id: 'ch4', description: "Kreón unokahúga, aki megsérti a király tilalmát", answer: "Antigoné", workId: 'w2' },
+                { id: 'ch5', description: "A szolgálólány, aki megöli munkaadóját", answer: "Édes Anna", workId: 'w19' },
+                { id: 'ch6', description: "Jutalom nélküli apostol, aki bosszúra törekszik", answer: "Szilveszter", workId: 'w15' },
+                { id: 'ch7', description: "Kukorica Jancsi szerelme", answer: "Iluska", workId: 'w14' },
+                { id: 'ch8', description: "A király felesége, akit Bánk megöl", answer: "Gertrudis", workId: 'w9' }
+            ]
+        };
+
+        // --- UTILS ---
+        const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const shuffle = (arr) => [...arr].sort(() => 0.5 - Math.random());
+
+        // --- COMPONENTS ---
+
+        const Button = ({ children, onClick, variant = 'primary', className = "", icon: Icon }) => {
+            const base = "px-6 py-3 rounded-2xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 transform active:scale-95";
+            const variants = {
+                primary: "bg-apple-900 text-white hover:bg-black dark:bg-white dark:text-black dark:hover:bg-apple-100 shadow-lg shadow-apple-900/10",
+                secondary: "bg-white text-apple-900 border border-apple-100 hover:bg-apple-50 dark:bg-apple-800 dark:border-apple-700 dark:text-white dark:hover:bg-apple-700",
+                ghost: "text-apple-500 hover:text-apple-900 dark:text-apple-400 dark:hover:text-white bg-transparent hover:bg-black/5 dark:hover:bg-white/10",
+                danger: "bg-red-500/10 text-red-600 hover:bg-red-500/20"
+            };
+            return (
+                <button onClick={onClick} className={`${base} ${variants[variant]} ${className}`}>
+                    {Icon && <Icon className="w-5 h-5" />}
+                    {children}
+                </button>
+            );
+        };
+
+        const Card = ({ children, className = "", title }) => (
+            <div className={`glass rounded-3xl p-6 md:p-8 animate-enter shadow-glass dark:shadow-glass-dark ${className}`}>
+                {title && <h3 className="text-xl font-bold mb-6 text-apple-900 dark:text-white">{title}</h3>}
+                {children}
+            </div>
+        );
+
+        // --- QUESTION TYPE COMPONENTS ---
+
+        // 1. Multiple Choice
+        const MultipleChoice = ({ data, onAnswer }) => {
+            return (
+                <div className="space-y-4">
+                    <h3 className="text-2xl font-bold text-center mb-8">{data.question}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {data.options.map((opt, i) => (
+                            <button key={i} onClick={() => onAnswer(opt === data.correct)}
+                                className="p-6 text-left rounded-2xl bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-transparent hover:border-blue-ios/30 transition-all font-medium text-lg shadow-sm hover:shadow-md group">
+                                <span className="inline-block w-8 h-8 rounded-full bg-apple-100 dark:bg-apple-700 text-center leading-8 mr-3 text-sm font-bold opacity-50 group-hover:bg-blue-ios group-hover:text-white transition-colors">
+                                    {String.fromCharCode(65 + i)}
+                                </span>
+                                {opt}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Drag Match (Definitions)
+        const DragMatch = ({ data, onAnswer }) => {
+            const [matches, setMatches] = useState({});
+            const [pool, setPool] = useState(shuffle(data.pairs.map(p => p.right)));
+
+            const handleDrop = (termId, val) => {
+                const newMatches = { ...matches, [termId]: val };
+                setMatches(newMatches);
+                setPool(pool.filter(p => p !== val));
+
+                // Check if complete
+                if (Object.keys(newMatches).length === data.pairs.length) {
+                    const correctCount = data.pairs.filter(p => newMatches[p.id] === p.right).length;
+                    onAnswer(correctCount === data.pairs.length); // Strict marking for simplicity in this demo, or partial
+                }
+            };
+
+            const resetMatch = (termId) => {
+                const val = matches[termId];
+                if (!val) return;
+                const newMatches = { ...matches };
+                delete newMatches[termId];
+                setMatches(newMatches);
+                setPool([...pool, val]);
+            };
+
+            return (
+                <div>
+                    <h3 className="text-xl font-bold text-center mb-6">{data.question}</h3>
+                    <div className="flex flex-col md:flex-row gap-8">
+                        <div className="flex-1 space-y-3">
+                            {data.pairs.map(p => (
+                                <div key={p.id} className="flex items-center justify-between bg-white dark:bg-apple-800 p-4 rounded-xl shadow-sm h-20">
+                                    <span className="font-medium text-sm flex-1 mr-2">{p.left}</span>
+                                    <div
+                                        onDragOver={e => e.preventDefault()}
+                                        onDrop={e => handleDrop(p.id, e.dataTransfer.getData('text'))}
+                                        onClick={() => resetMatch(p.id)}
+                                        className={`w-32 h-12 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-bold cursor-pointer transition-all ${matches[p.id] ? 'bg-blue-ios/10 border-blue-ios text-blue-ios' : 'border-apple-200 dark:border-apple-600 text-apple-400'}`}
+                                    >
+                                        {matches[p.id] || "Húzd ide"}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="w-full md:w-48 bg-apple-50 dark:bg-apple-900/50 p-4 rounded-2xl flex flex-wrap content-start gap-2 min-h-[200px]">
+                            {pool.map((word, i) => (
+                                <div
+                                    key={i}
+                                    draggable
+                                    onDragStart={e => e.dataTransfer.setData('text', word)}
+                                    className="px-3 py-2 bg-white dark:bg-apple-700 rounded-lg shadow-sm text-sm font-semibold draggable-source hover:scale-105 transition-transform cursor-grab active:cursor-grabbing"
+                                >
+                                    {word}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {Object.keys(matches).length === data.pairs.length && (
+                        <div className="mt-6 flex justify-center animate-enter">
+                            <Button onClick={() => {
+                                // Simple correctness check for now
+                                const isCorrect = data.pairs.every(p => matches[p.id] === p.right);
+                                onAnswer(isCorrect);
+                            }}>Kész!</Button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 3. True / False
+        const TrueFalse = ({ data, onAnswer }) => (
+            <div className="text-center space-y-8 max-w-lg mx-auto">
+                <h3 className="text-2xl font-bold leading-relaxed">{data.statement}</h3>
+                <div className="flex gap-4 justify-center">
+                    <button onClick={() => onAnswer(data.isTrue)} className="flex-1 py-8 bg-green-ios/10 text-green-ios hover:bg-green-ios hover:text-white rounded-3xl font-bold text-xl transition-all border-2 border-green-ios">IGAZ</button>
+                    <button onClick={() => onAnswer(!data.isTrue)} className="flex-1 py-8 bg-red-ios/10 text-red-ios hover:bg-red-ios hover:text-white rounded-3xl font-bold text-xl transition-all border-2 border-red-ios">HAMIS</button>
+                </div>
+            </div>
+        );
+
+        // 5. Poem Gap Fill
+        const PoemGapFill = ({ data, onAnswer }) => {
+            const [inputs, setInputs] = useState({});
+
+            const check = () => {
+                const correctCount = data.blanks.filter(b => {
+                    const val = inputs[b.index] || "";
+                    // Simple check: compare trimmed, lowercase values
+                    const userVal = val.trim().toLowerCase().replace(/[.,!?;:-]/g, '');
+                    const correctVal = b.word.toLowerCase().replace(/[.,!?;:-]/g, '');
+                    return userVal === correctVal;
+                }).length;
+
+                // Allow 1 mistake if many blanks, otherwise strict
+                onAnswer(correctCount === data.blanks.length);
+            };
+
+            return (
+                <div className="max-w-xl mx-auto text-center">
+                    <h3 className="text-xl font-bold mb-2">{data.question}</h3>
+                    <p className="text-apple-500 mb-8 text-sm uppercase tracking-widest">{data.author}: {data.title}</p>
+
+                    <div className="bg-white/50 dark:bg-black/20 p-8 rounded-3xl shadow-sm border border-white/40 mb-8 font-serif text-lg md:text-xl leading-loose">
+                        {data.parts.map((part, i) => (
+                            <span key={i}>
+                                {part.missing ? (
+                                    <input
+                                        type="text"
+                                        className="mx-1 w-24 bg-transparent border-b-2 border-apple-300 focus:border-blue-ios outline-none text-center font-bold text-blue-ios placeholder-apple-200 transition-colors"
+                                        placeholder="?"
+                                        value={inputs[part.index] || ""}
+                                        onChange={(e) => setInputs({ ...inputs, [part.index]: e.target.value })}
+                                        onKeyDown={(e) => e.key === 'Enter' && check()}
+                                    />
+                                ) : (
+                                    part.text
+                                )}
+                            </span>
+                        ))}
+                    </div>
+
+                    <Button onClick={check}>Ellenőrzés</Button>
+                </div>
+            );
+        };
+
+        // 4. Ordering
+        const OrderSort = ({ data, onAnswer }) => {
+            const [items, setItems] = useState(shuffle([...data.items]));
+
+            const move = (idx, dir) => {
+                if ((idx === 0 && dir === -1) || (idx === items.length - 1 && dir === 1)) return;
+                const newItems = [...items];
+                [newItems[idx], newItems[idx + dir]] = [newItems[idx + dir], newItems[idx]];
+                setItems(newItems);
+            };
+
+            return (
+                <div className="max-w-md mx-auto">
+                    <h3 className="text-xl font-bold text-center mb-6">{data.question}</h3>
+                    <div className="space-y-2">
+                        {items.map((item, idx) => (
+                            <div key={item} className="flex items-center gap-2 bg-white dark:bg-apple-800 p-3 rounded-xl shadow-sm animate-enter" style={{ animationDelay: `${idx * 50}ms` }}>
+                                <div className="font-mono text-apple-400 font-bold w-6 text-center">{idx + 1}.</div>
+                                <div className="flex-1 font-medium">{item}</div>
+                                <div className="flex flex-col gap-1">
+                                    <button onClick={() => move(idx, -1)} disabled={idx === 0} className="p-1 hover:bg-black/5 rounded disabled:opacity-20"><Icons.ArrowUp className="w-4 h-4" /></button>
+                                    <button onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="p-1 hover:bg-black/5 rounded disabled:opacity-20"><Icons.ArrowDown className="w-4 h-4" /></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-8 flex justify-center">
+                        <Button onClick={() => {
+                            const isCorrect = JSON.stringify(items) === JSON.stringify(data.correctOrder);
+                            onAnswer(isCorrect);
+                        }}>Ellenőrzés</Button>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // 6. Odd One Out
+        const OddOneOut = ({ data, onAnswer }) => {
+            return (
+                <div className="space-y-4">
+                    <h3 className="text-2xl font-bold text-center mb-8">{data.question}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {data.options.map((opt, i) => (
+                            <button key={i} onClick={() => onAnswer(opt === data.correct)}
+                                className="p-6 text-left rounded-2xl bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-transparent hover:border-blue-ios/30 transition-all font-medium text-lg shadow-sm hover:shadow-md group">
+                                {opt}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // 7. Table Completion
+        const TableCompletion = ({ data, onAnswer }) => {
+            const [inputs, setInputs] = useState({});
+
+            const updateInput = (rowId, colName, value) => {
+                setInputs({ ...inputs, [`${rowId}-${colName}`]: value });
+            };
+
+            const check = () => {
+                let correct = 0;
+                let total = 0;
+                data.rows.forEach(row => {
+                    data.columns.forEach(col => {
+                        if (row.missing && row.missing.includes(col)) {
+                            total++;
+                            const userVal = inputs[`${row.id}-${col}`];
+                            if (userVal === row[col]) correct++;
+                        }
+                    });
+                });
+                onAnswer(correct === total);
+            };
+
+            return (
+                <div className="max-w-3xl mx-auto">
+                    <h3 className="text-xl font-bold text-center mb-6">{data.question}</h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full bg-white dark:bg-apple-800 rounded-xl shadow-sm">
+                            <thead className="bg-apple-100 dark:bg-apple-700">
+                                <tr>
+                                    {data.columns.map(col => (
+                                        <th key={col} className="p-3 text-left font-bold text-sm uppercase">{col}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.rows.map((row, idx) => (
+                                    <tr key={row.id} className={idx % 2 === 0 ? 'bg-white dark:bg-apple-800' : 'bg-apple-50 dark:bg-apple-900/50'}>
+                                        {data.columns.map(col => (
+                                            <td key={col} className="p-3">
+                                                {row.missing && row.missing.includes(col) ? (
+                                                    <select
+                                                        className="w-full p-2 border border-apple-200 dark:border-apple-600 rounded-lg bg-white dark:bg-apple-700 focus:border-blue-ios outline-none"
+                                                        value={inputs[`${row.id}-${col}`] || ""}
+                                                        onChange={(e) => updateInput(row.id, col, e.target.value)}
+                                                    >
+                                                        <option value="">Válassz...</option>
+                                                        {data.options[col].map(opt => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <span className="font-medium">{row[col]}</span>
+                                                )}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="mt-6 flex justify-center">
+                        <Button onClick={check}>Ellenőrzés</Button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 8. Quote with Literary Device
+        const QuoteLiteraryDevice = ({ data, onAnswer }) => {
+            return (
+                <div className="max-w-xl mx-auto space-y-6">
+                    <h3 className="text-xl font-bold text-center mb-4">{data.question}</h3>
+                    <div className="bg-white/50 dark:bg-black/20 p-6 rounded-2xl border border-white/40 text-center">
+                        <p className="text-xl font-serif italic mb-2">"{data.quote}"</p>
+                        <p className="text-sm text-apple-500">— {data.source}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {data.options.map((opt, i) => (
+                            <button key={i} onClick={() => onAnswer(opt === data.correct)}
+                                className="p-4 text-center rounded-xl bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-transparent hover:border-blue-ios/30 transition-all font-medium shadow-sm hover:shadow-md">
+                                {opt}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // 9. Literary Term Example Matching
+        const LiteraryTermMatching = ({ data, onAnswer }) => {
+            const [matches, setMatches] = useState({});
+            const [pool, setPool] = useState(shuffle(data.pairs.map(p => p.example)));
+
+            const handleDrop = (termId, val) => {
+                const newMatches = { ...matches, [termId]: val };
+                setMatches(newMatches);
+                setPool(pool.filter(p => p !== val));
+
+                if (Object.keys(newMatches).length === data.pairs.length) {
+                    const correctCount = data.pairs.filter(p => newMatches[p.id] === p.example).length;
+                    onAnswer(correctCount === data.pairs.length);
+                }
+            };
+
+            const resetMatch = (termId) => {
+                const val = matches[termId];
+                if (!val) return;
+                const newMatches = { ...matches };
+                delete newMatches[termId];
+                setMatches(newMatches);
+                setPool([...pool, val]);
+            };
+
+            return (
+                <div>
+                    <h3 className="text-xl font-bold text-center mb-6">{data.question}</h3>
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1 space-y-3">
+                            {data.pairs.map(p => (
+                                <div key={p.id} className="flex items-center justify-between bg-white dark:bg-apple-800 p-4 rounded-xl shadow-sm">
+                                    <span className="font-bold text-blue-ios flex-1 mr-2">{p.term}</span>
+                                    <div
+                                        onDragOver={e => e.preventDefault()}
+                                        onDrop={e => handleDrop(p.id, e.dataTransfer.getData('text'))}
+                                        onClick={() => resetMatch(p.id)}
+                                        className={`flex-1 h-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-medium cursor-pointer transition-all p-2 ${matches[p.id] ? 'bg-blue-ios/10 border-blue-ios text-blue-ios' : 'border-apple-200 dark:border-apple-600 text-apple-400'}`}
+                                    >
+                                        {matches[p.id] || "Húzd ide az idézetet"}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="w-full md:w-64 bg-apple-50 dark:bg-apple-900/50 p-4 rounded-2xl space-y-2 min-h-[200px]">
+                            {pool.map((example, i) => (
+                                <div
+                                    key={i}
+                                    draggable
+                                    onDragStart={e => e.dataTransfer.setData('text', example)}
+                                    className="p-3 bg-white dark:bg-apple-700 rounded-lg shadow-sm text-sm font-medium draggable-source hover:scale-105 transition-transform cursor-grab active:cursor-grabbing italic"
+                                >
+                                    "{example}"
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 10. Era Classification
+        const EraClassification = ({ data, onAnswer }) => {
+            const [items, setItems] = useState(shuffle([...data.items]));
+            const [columns, setColumns] = useState(data.eras.reduce((acc, era) => ({ ...acc, [era]: [] }), {}));
+
+            const handleDrop = (era, item) => {
+                // Remove from items pool
+                setItems(items.filter(i => i !== item));
+                // Remove from other columns
+                const newCols = { ...columns };
+                Object.keys(newCols).forEach(e => {
+                    newCols[e] = newCols[e].filter(i => i !== item);
+                });
+                // Add to target column
+                newCols[era] = [...newCols[era], item];
+                setColumns(newCols);
+
+                // Check if complete
+                if (items.length === 1) { // Last item
+                    setTimeout(() => {
+                        let correct = 0;
+                        data.items.forEach(item => {
+                            const correctEra = data.correct[item];
+                            const userEra = Object.keys(newCols).find(era => newCols[era].includes(item));
+                            if (correctEra === userEra) correct++;
+                        });
+                        onAnswer(correct === data.items.length);
+                    }, 100);
+                }
+            };
+
+            const removeFromColumn = (era, item) => {
+                const newCols = { ...columns };
+                newCols[era] = newCols[era].filter(i => i !== item);
+                setColumns(newCols);
+                setItems([...items, item]);
+            };
+
+            return (
+                <div>
+                    <h3 className="text-xl font-bold text-center mb-6">{data.question}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        {data.eras.map(era => (
+                            <div key={era} className="bg-white dark:bg-apple-800 rounded-xl p-4 min-h-[200px]"
+                                onDragOver={e => e.preventDefault()}
+                                onDrop={e => handleDrop(era, e.dataTransfer.getData('text'))}>
+                                <h4 className="font-bold text-center mb-3 text-blue-ios border-b border-apple-200 dark:border-apple-700 pb-2">{era}</h4>
+                                <div className="space-y-2">
+                                    {columns[era].map(item => (
+                                        <div key={item} onClick={() => removeFromColumn(era, item)}
+                                            className="p-2 bg-apple-50 dark:bg-apple-700 rounded text-sm font-medium cursor-pointer hover:bg-apple-100 dark:hover:bg-apple-600 transition-colors">
+                                            {item}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="bg-apple-50 dark:bg-apple-900/50 p-4 rounded-2xl">
+                        <p className="text-xs uppercase font-bold text-apple-500 mb-2 text-center">Húzd a megfelelő korszakhoz</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                            {items.map(item => (
+                                <div key={item} draggable
+                                    onDragStart={e => e.dataTransfer.setData('text', item)}
+                                    className="px-3 py-2 bg-white dark:bg-apple-700 rounded-lg shadow-sm text-sm font-semibold draggable-source hover:scale-105 transition-transform cursor-grab active:cursor-grabbing">
+                                    {item}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 11. Character Identification
+        const CharacterIdentification = ({ data, onAnswer }) => {
+            return (
+                <div className="max-w-xl mx-auto space-y-6">
+                    <h3 className="text-xl font-bold text-center mb-4">Ki ez a szereplő?</h3>
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-apple-900/50 dark:to-apple-800/50 p-8 rounded-2xl border-2 border-blue-ios/20 text-center">
+                        <p className="text-lg font-medium leading-relaxed">{data.description}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {data.options.map((opt, i) => (
+                            <button key={i} onClick={() => onAnswer(opt === data.correct)}
+                                className="p-4 text-center rounded-xl bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 border border-transparent hover:border-blue-ios/30 transition-all font-medium shadow-sm hover:shadow-md">
+                                {opt}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- SCREENS ---
+
+        const WelcomeScreen = ({ onStart }) => {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 animate-enter">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-ios blur-3xl opacity-20 dark:opacity-40 rounded-full animate-float"></div>
+                        <div className="relative bg-white dark:bg-apple-800 p-6 rounded-3xl shadow-2xl rotate-3">
+                            <Icons.BookOpen className="w-16 h-16 text-blue-ios" />
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h1 className="text-4xl md:text-6xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-apple-900 to-apple-500 dark:from-white dark:to-apple-400">
+                            Irodalom Mester
+                        </h1>
+                        <p className="text-lg text-apple-500 dark:text-apple-400 max-w-md mx-auto leading-relaxed">
+                            Teszteld tudásod a magyar és világirodalom remekeiből egy modern, interaktív környezetben.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+                        <button onClick={() => onStart('zen')} className="flex-1 group relative overflow-hidden p-6 bg-white dark:bg-apple-800 rounded-3xl text-left border border-apple-100 dark:border-apple-700 hover:border-blue-ios dark:hover:border-blue-ios transition-all active:scale-95 shadow-lg">
+                            <div className="absolute top-4 right-4 text-apple-300 group-hover:text-blue-ios transition-colors"><Icons.Infinity className="w-6 h-6" /></div>
+                            <div className="text-xl font-bold mb-1">Gyakorlás</div>
+                            <div className="text-sm text-apple-500">Időkorlát nélkül, azonnali visszajelzéssel.</div>
+                        </button>
+
+                        <button onClick={() => onStart('exam')} className="flex-1 group relative overflow-hidden p-6 bg-apple-900 dark:bg-white rounded-3xl text-left text-white dark:text-black hover:shadow-2xl hover:shadow-apple-900/20 active:scale-95 transition-all">
+                            <div className="absolute top-4 right-4 opacity-50"><Icons.Clock className="w-6 h-6" /></div>
+                            <div className="text-xl font-bold mb-1">Vizsga</div>
+                            <div className="text-sm opacity-80">10 kérdés, időre megy, rangsorolással.</div>
+                        </button>
+                    </div>
+                </div>
+            )
+        };
+
+        const GameScreen = ({ mode, onEnd }) => {
+            const [qIndex, setQIndex] = useState(0);
+            const [score, setScore] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(mode === 'exam' ? 300 : null); // 5 mins for exam
+            const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect'
+
+            // Generate question sequence dynamically
+            const [questions] = useState(() => {
+                const qs = [];
+                const qCount = mode === 'exam' ? 10 : 20;
+
+                // Helpers
+                const getRandomAuthors = (n) => shuffle(DB.authors).slice(0, n);
+                const getRandomWorks = (n) => shuffle(DB.works).slice(0, n);
+                const getRandomDefs = (n) => shuffle(DB.definitions).slice(0, n);
+
+                for (let i = 0; i < qCount; i++) {
+                    const type = rnd(['multi', 'tf', 'drag', 'order', 'poem', 'odd', 'char', 'table', 'quote', 'termMatch', 'eraClass', 'charDesc']); // weighted
+
+                    if (type === 'multi') {
+                        // Topic: Author of Work OR Genre of Work
+                        if (Math.random() > 0.5) {
+                            const w = getRandomWorks(1)[0];
+                            const correctAuthor = DB.authors.find(a => a.id === w.authorId);
+                            if (!correctAuthor) {
+                                i--; // Retry if work has invalid author
+                                continue;
+                            }
+                            const wrongAuthors = getRandomAuthors(3).filter(a => a.id !== correctAuthor.id).slice(0, 3);
+                            while (wrongAuthors.length < 3) wrongAuthors.push(getRandomAuthors(1)[0]); // fallback
+
+                            qs.push({
+                                type: 'multi',
+                                question: `Ki írta a(z) "${w.title}" című művet?`,
+                                options: shuffle([correctAuthor.name, ...wrongAuthors.map(a => a.name)]),
+                                correct: correctAuthor.name
+                            });
+                        } else {
+                            const w = getRandomWorks(1)[0];
+                            const genres = [...new Set(DB.works.map(x => x.genre))]; // Unique genres
+                            const wrongGenres = shuffle(genres.filter(g => g !== w.genre)).slice(0, 3);
+                            while (wrongGenres.length < 3) wrongGenres.push(genres[0]); // fallback
+
+                            qs.push({
+                                type: 'multi',
+                                question: `Milyen műfajú a(z) "${w.title}"?`,
+                                options: shuffle([w.genre, ...wrongGenres]),
+                                correct: w.genre
+                            });
+                        }
+                    } else if (type === 'tf') {
+                        const target = Math.random() > 0.5 ? getRandomAuthors(1)[0] : getRandomWorks(1)[0];
+                        const isTrue = Math.random() > 0.5;
+
+                        if (target.name) { // Author
+                            const fact = isTrue ? target.era : rnd(DB.eras.filter(e => e !== target.era));
+                            qs.push({
+                                type: 'tf',
+                                statement: `${target.name} a(z) ${fact} korszakban alkotott.`,
+                                isTrue: isTrue
+                            });
+                        } else { // Work
+                            const correctAuthor = DB.authors.find(a => a.id === target.authorId);
+                            if (!correctAuthor) {
+                                i--; // Retry if work has invalid author
+                                continue;
+                            }
+                            const fakeAuthor = getRandomAuthors(1)[0];
+                            const statedAuthor = isTrue ? correctAuthor : fakeAuthor;
+                            // Ensure fake isn't accidentally correct
+                            const finalBool = isTrue || (statedAuthor.id !== correctAuthor.id);
+
+                            qs.push({
+                                type: 'tf',
+                                statement: `A(z) "${target.title}" szerzője ${isTrue ? correctAuthor.name : fakeAuthor.name}.`,
+                                isTrue: isTrue
+                            });
+                        }
+                    } else if (type === 'drag') {
+                        const pairs = getRandomDefs(3).map((d, idx) => ({
+                            id: `dm_${i}_${idx}`,
+                            left: d.term,
+                            right: d.def
+                        }));
+                        qs.push({
+                            type: 'drag',
+                            question: 'Párosítsd a fogalmakat a jelentésükkel!',
+                            pairs: pairs
+                        });
+                    } else if (type === 'order') {
+                        // Order eras or authors by era (harder) - sticking to Era labels for now
+                        const selectedEras = shuffle([...DB.eras]).slice(0, 4);
+                        // Sort them based on original index in DB.eras
+                        const sortedEras = [...selectedEras].sort((a, b) => DB.eras.indexOf(a) - DB.eras.indexOf(b));
+
+                        qs.push({
+                            type: 'order',
+                            question: 'Tedd időrendi sorrendbe a korszakokat!',
+                            items: selectedEras, // Shuffled input
+                            correctOrder: sortedEras
+                        });
+                    } else if (type === 'poem') {
+                        const p = shuffle(DB.poems)[0];
+                        // Split by spaces but keep punctuation attached in a smart way or just simple split
+                        // Simple approach: split by space, if word > 3 chars, 30% chance to blink it
+                        const parts = [];
+                        const blanks = [];
+                        const words = p.text.split(/(\s+)/); // split keep delimiters
+
+                        let wordIdx = 0;
+                        words.forEach((token) => {
+                            if (!token.trim()) {
+                                parts.push({ t: 'txt', text: token, missing: false });
+                            } else {
+                                const clean = token.replace(/[.,!?;:-]/g, '');
+                                if (clean.length > 3 && Math.random() < 0.4 && blanks.length < 3) {
+                                    parts.push({ t: 'input', index: wordIdx, missing: true, text: token });
+                                    blanks.push({ index: wordIdx, word: clean });
+                                } else {
+                                    parts.push({ t: 'txt', text: token, missing: false });
+                                }
+                                wordIdx++;
+                            }
+                        });
+
+                        // If no blanks generated (short words), force one
+                        if (blanks.length === 0) {
+                            const cand = parts.find(x => x.t === 'txt' && x.text.length > 2);
+                            if (cand) {
+                                cand.t = 'input';
+                                cand.missing = true;
+                                cand.index = 999;
+                                blanks.push({ index: 999, word: cand.text.replace(/[.,!?;:-]/g, '') });
+                            }
+                        }
+
+                        qs.push({
+                            type: 'poem',
+                            question: 'Egészítsd ki a verset!',
+                            title: p.title,
+                            author: p.author,
+                            parts: parts,
+                            blanks: blanks
+                        });
+                    } else if (type === 'odd') {
+                        // Odd One Out
+                        const isEra = Math.random() > 0.5;
+                        if (isEra) {
+                            const targetEra = rnd(DB.eras);
+                            const correctAuthors = DB.authors.filter(a => a.era === targetEra);
+                            if (correctAuthors.length >= 3) {
+                                const others = DB.authors.filter(a => a.era !== targetEra);
+                                const selection = shuffle(correctAuthors).slice(0, 3);
+                                const odd = shuffle(others)[0];
+                                
+                                qs.push({
+                                    type: 'odd',
+                                    question: `Melyik szerző NEM a(z) ${targetEra} korszakhoz tartozik?`,
+                                    options: shuffle([...selection.map(a => a.name), odd.name]),
+                                    correct: odd.name
+                                });
+                            } else {
+                                i--; // Retry
+                            }
+                        } else {
+                             const genres = [...new Set(DB.works.map(x => x.genre))];
+                             const targetGenre = rnd(genres.filter(g => DB.works.filter(w => w.genre === g).length >= 3));
+                             if (targetGenre) {
+                                 const correctWorks = DB.works.filter(w => w.genre === targetGenre);
+                                 const otherWorks = DB.works.filter(w => w.genre !== targetGenre);
+                                 const selection = shuffle(correctWorks).slice(0, 3);
+                                 const odd = shuffle(otherWorks)[0];
+
+                                 qs.push({
+                                     type: 'odd',
+                                     question: `Melyik mű műfaja NEM ${targetGenre}?`,
+                                     options: shuffle([...selection.map(w => w.title), odd.title]),
+                                     correct: odd.title
+                                 });
+                             } else {
+                                 i--;
+                             }
+                        }
+                    } else if (type === 'char') {
+                        // Character Match
+                        const worksWithChars = DB.works.filter(w => w.characters && w.characters.length > 0);
+                        const targetWork = rnd(worksWithChars);
+                        if (targetWork) {
+                            const char = rnd(targetWork.characters);
+                            const others = shuffle(DB.works.filter(w => w.id !== targetWork.id)).slice(0, 3);
+                            
+                            qs.push({
+                                type: 'multi',
+                                question: `Melyik mű szereplője ${char}?`,
+                                options: shuffle([targetWork.title, ...others.map(w => w.title)]),
+                                correct: targetWork.title
+                            });
+                        } else {
+                            i--;
+                        }
+                    } else if (type === 'table') {
+                        // Table Completion
+                        const selectedWorks = shuffle(DB.works.filter(w => w.authorId)).slice(0, 3);
+                        const rows = selectedWorks.map((w, idx) => {
+                            const author = DB.authors.find(a => a.id === w.authorId);
+                            const missingCol = rnd(['Szerző', 'Mű', 'Műfaj']);
+                            return {
+                                id: `r${idx}`,
+                                Szerző: author.name,
+                                Mű: w.title,
+                                Műfaj: w.genre,
+                                Korszak: author.era,
+                                missing: [missingCol]
+                            };
+                        });
+
+                        const allAuthors = [...new Set(DB.authors.map(a => a.name))];
+                        const allWorks = [...new Set(DB.works.map(w => w.title))];
+                        const allGenres = [...new Set(DB.works.map(w => w.genre))];
+                        const allEras = [...new Set(DB.authors.map(a => a.era))];
+
+                        qs.push({
+                            type: 'table',
+                            question: 'Töltsd ki a táblázat hiányzó celláit!',
+                            columns: ['Szerző', 'Mű', 'Műfaj'],
+                            rows: rows,
+                            options: {
+                                Szerző: shuffle(allAuthors).slice(0, 10),
+                                Mű: shuffle(allWorks).slice(0, 10),
+                                Műfaj: shuffle(allGenres),
+                                Korszak: allEras
+                            }
+                        });
+                    } else if (type === 'quote') {
+                        // Quote with Literary Device
+                        const ex = rnd(DB.literaryExamples);
+                        const wrongTerms = shuffle(DB.definitions.map(d => d.term).filter(t => t !== ex.term)).slice(0, 3);
+
+                        qs.push({
+                            type: 'quote',
+                            question: 'Milyen stíluseszközt találsz az idézetben?',
+                            quote: ex.example,
+                            source: ex.source,
+                            options: shuffle([ex.term, ...wrongTerms]),
+                            correct: ex.term
+                        });
+                    } else if (type === 'termMatch') {
+                        // Literary Term Example Matching
+                        const examples = shuffle(DB.literaryExamples).slice(0, 3);
+                        const pairs = examples.map((ex, idx) => ({
+                            id: `tm${idx}`,
+                            term: ex.term,
+                            example: ex.example
+                        }));
+
+                        qs.push({
+                            type: 'termMatch',
+                            question: 'Párosítsd a stíluseszközöket az idézetekkel!',
+                            pairs: pairs
+                        });
+                    } else if (type === 'eraClass') {
+                        // Era Classification
+                        const selectedEras = shuffle(DB.eras).slice(0, 3);
+                        const itemsPerEra = 2;
+                        const items = [];
+                        const correct = {};
+
+                        selectedEras.forEach(era => {
+                            const authorsInEra = shuffle(DB.authors.filter(a => a.era === era)).slice(0, itemsPerEra);
+                            authorsInEra.forEach(author => {
+                                items.push(author.name);
+                                correct[author.name] = era;
+                            });
+                        });
+
+                        if (items.length >= 6) {
+                            qs.push({
+                                type: 'eraClass',
+                                question: 'Sorold be a szerzőket a megfelelő korszakokba!',
+                                eras: selectedEras,
+                                items: items,
+                                correct: correct
+                            });
+                        } else {
+                            i--;
+                        }
+                    } else if (type === 'charDesc') {
+                        // Character Description Identification
+                        const desc = rnd(DB.characterDescriptions);
+                        const work = DB.works.find(w => w.id === desc.workId);
+
+                        // Get all characters from all works except the correct answer
+                        const allChars = [];
+                        DB.works.forEach(w => {
+                            if (w.characters) {
+                                w.characters.forEach(c => {
+                                    if (c !== desc.answer && !allChars.includes(c)) {
+                                        allChars.push(c);
+                                    }
+                                });
+                            }
+                        });
+
+                        const wrongChars = shuffle(allChars).slice(0, 3);
+
+                        if (wrongChars.length >= 3) {
+                            qs.push({
+                                type: 'charDesc',
+                                description: desc.description,
+                                options: shuffle([desc.answer, ...wrongChars]),
+                                correct: desc.answer
+                            });
+                        } else {
+                            i--;
+                        }
+                    }
+                }
+                return qs;
+            });
+
+            // Timer for exam
+            useEffect(() => {
+                if (mode !== 'exam') return;
+                if (timeLeft <= 0) { onEnd({ score, total: questions.length }); return; }
+                const t = setInterval(() => setTimeLeft(l => l - 1), 1000);
+                return () => clearInterval(t);
+            }, [timeLeft, mode]);
+
+            const handleAnswer = (isCorrect) => {
+                const isWin = isCorrect;
+                setFeedback(isWin ? 'correct' : 'incorrect');
+
+                if (isWin) {
+                    setScore(s => s + 1);
+                    setStreak(s => s + 1);
+                    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 }, colors: ['#34C759', '#32D74B'] });
+                } else {
+                    setStreak(0);
+                }
+
+                // Next question with delay - longer for incorrect to allow reading
+                const delay = isWin ? 1500 : 4000;
+
+                setTimeout(() => {
+                    setFeedback(null);
+                    if (qIndex < questions.length - 1) {
+                        setQIndex(q => q + 1);
+                    } else {
+                        onEnd({ score: score + (isWin ? 1 : 0), total: questions.length });
+                    }
+                }, delay);
+            };
+
+            const q = questions[qIndex];
+            if (!q) return <div className="p-8 text-center text-apple-500">Töltés...</div>;
+            const progress = ((qIndex) / questions.length) * 100;
+
+            const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+            const getExplanation = (q) => {
+                if (!q) return "";
+                switch (q.type) {
+                    case 'multi': return q.correct;
+                    case 'tf': return q.isTrue ? "IGAZ" : "HAMIS";
+                    case 'order': return q.correctOrder.join(' → ');
+                    case 'poem': return q.blanks.map(b => b.word).join(', ');
+                    case 'drag': return q.pairs.map(p => `${p.left} - ${p.right}`).join('; ');
+                    case 'odd': return q.correct;
+                    case 'table': return 'Ellenőrizd a táblázat helyes értékeit!';
+                    case 'quote': return q.correct;
+                    case 'termMatch': return q.pairs.map(p => `${p.term}: "${p.example}"`).join('; ');
+                    case 'eraClass': return Object.entries(q.correct).map(([item, era]) => `${item} → ${era}`).join(', ');
+                    case 'charDesc': return q.correct;
+                    default: return "";
+                }
+            };
+
+            return (
+                <div className="w-full max-w-2xl mx-auto pb-20">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-8 py-4 px-4 bg-white/50 dark:bg-black/20 backdrop-blur-md rounded-full sticky top-4 z-50 border border-white/20">
+                        <Button variant="ghost" onClick={() => onEnd(null)} className="!p-2"><Icons.X size={20} /></Button>
+                        <div className="flex flex-col items-center">
+                            <div className="text-xs font-bold text-apple-400 uppercase tracking-widest mb-1">{mode === 'exam' ? 'Vizsga' : 'Gyakorlás'}</div>
+                            <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-24 bg-apple-200 dark:bg-apple-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-apple-900 dark:bg-white transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+                                </div>
+                                <span className="text-xs font-mono tabular-nums text-apple-500">{qIndex + 1}/{questions.length}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {mode === 'exam' && <div className={`font-mono font-bold ${timeLeft < 60 ? 'text-red-ios' : 'text-apple-900 dark:text-white'}`}>{formatTime(timeLeft)}</div>}
+                            {mode === 'zen' && streak > 1 && <div className="px-2 py-1 bg-orange-100 text-orange-600 rounded-lg text-xs font-bold">🔥 {streak}</div>}
+                        </div>
+                    </div>
+
+                    {/* Question Card */}
+                    <div key={qIndex} className="relative">
+                         <div className={`transition-all duration-300 rounded-3xl ${
+                            feedback === 'correct' ? 'ring-4 ring-green-ios shadow-[0_0_50px_rgba(52,199,89,0.4)]' : 
+                            feedback === 'incorrect' ? 'ring-4 ring-red-ios shadow-[0_0_50px_rgba(255,59,48,0.4)] animate-shake' : ''
+                        }`}>
+                            <Card className="min-h-[400px] flex flex-col justify-center relative overflow-hidden">
+                                {feedback && (
+                                    <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-md bg-white/80 dark:bg-black/80 animate-enter p-6 text-center`}>
+                                        {feedback === 'correct' ? (
+                                            <>
+                                                <div className="bg-green-ios text-white p-6 rounded-full shadow-2xl scale-125 mb-6">
+                                                    <Icons.Check size={48} strokeWidth={4} />
+                                                </div>
+                                                <h3 className="text-3xl font-black text-green-ios">Helyes!</h3>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="bg-red-ios text-white p-6 rounded-full shadow-2xl scale-125 mb-6">
+                                                    <Icons.X size={48} strokeWidth={4} />
+                                                </div>
+                                                <h3 className="text-3xl font-black text-red-ios mb-4">Helytelen!</h3>
+                                                <div className="text-apple-900 dark:text-white bg-white/50 dark:bg-black/50 p-4 rounded-xl border border-apple-100 dark:border-apple-800">
+                                                    <p className="opacity-60 font-bold uppercase text-xs mb-2 tracking-widest">A helyes válasz</p>
+                                                    <p className="text-lg md:text-xl font-bold leading-relaxed max-w-lg">
+                                                        {getExplanation(q)}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                <div className={feedback ? 'blur-sm transition-all pointer-events-none opacity-50' : 'transition-all'}>
+                                    {q.type === 'multi' && <MultipleChoice data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'tf' && <TrueFalse data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'drag' && <DragMatch data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'order' && <OrderSort data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'poem' && <PoemGapFill data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'odd' && <OddOneOut data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'table' && <TableCompletion data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'quote' && <QuoteLiteraryDevice data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'termMatch' && <LiteraryTermMatching data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'eraClass' && <EraClassification data={q} onAnswer={handleAnswer} />}
+                                    {q.type === 'charDesc' && <CharacterIdentification data={q} onAnswer={handleAnswer} />}
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ResultScreen = ({ result, onRestart }) => {
+            const percentage = Math.round((result.score / result.total) * 100);
+
+            useEffect(() => {
+                const end = Date.now() + 1000;
+                const frame = () => {
+                    confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+                    confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                };
+                frame();
+            }, []);
+
+            return (
+                <div className="text-center animate-enter max-w-md mx-auto">
+                    <div className="inline-block p-6 rounded-full bg-apple-50 dark:bg-apple-800 mb-8 shadow-xl">
+                        <Icons.Trophy className="w-16 h-16 text-yellow-500" />
+                    </div>
+
+                    <h2 className="text-4xl font-bold mb-2">Szép munka!</h2>
+                    <p className="text-apple-500 text-lg mb-8">Sikeresen teljesítetted a tesztet.</p>
+
+                    <div className="glass rounded-3xl p-8 mb-8 flex items-center justify-around">
+                        <div className="flex flex-col">
+                            <span className="text-5xl font-black text-apple-900 dark:text-white">{percentage}%</span>
+                            <span className="text-sm font-bold text-apple-400 uppercase mt-1">Eredmény</span>
+                        </div>
+                        <div className="w-px h-16 bg-apple-200 dark:bg-apple-700"></div>
+                        <div className="flex flex-col">
+                            <span className="text-5xl font-black text-apple-900 dark:text-white">{result.score}</span>
+                            <span className="text-sm font-bold text-apple-400 uppercase mt-1">Pontszám</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Button variant="primary" onClick={onRestart} className="w-full py-4 text-lg">Újrakezdés</Button>
+                        {/* <Button variant="secondary" className="w-full">Eredmény megosztása</Button> */}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [screen, setScreen] = useState('welcome'); // welcome, zen, exam, result
+            const [mode, setMode] = useState(null);
+            const [result, setResult] = useState(null);
+
+            // Dark mode toggle
+            const [isDark, setIsDark] = useState(false);
+            useEffect(() => {
+                if (isDark) document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            }, [isDark]);
+
+            const start = (m) => {
+                setMode(m);
+                setScreen('game');
+            };
+
+            const end = (res) => {
+                if (res) {
+                    setResult(res);
+                    setScreen('result');
+                } else {
+                    setScreen('welcome');
+                }
+            };
+
+            return (
+                <div className="min-h-screen py-8 px-4 flex flex-col items-center relative overflow-hidden selection:bg-blue-ios selection:text-white">
+                    {/* Background decorations */}
+                    <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-purple-200/30 dark:bg-purple-900/10 blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
+                        <div className="absolute top-[40%] -right-[10%] w-[50%] h-[50%] rounded-full bg-blue-200/30 dark:bg-blue-900/10 blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+                    </div>
+
+                    {/* Nav actions */}
+                    <div className="absolute top-6 right-6 z-50">
+                        <button onClick={() => setIsDark(!isDark)} className="p-3 bg-white/50 dark:bg-black/50 backdrop-blur-xl rounded-full shadow-lg hover:scale-110 transition-transform text-apple-900 dark:text-white">
+                            {isDark ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
+                        </button>
+                    </div>
+
+                    {/* Main Content */}
+                    <main className="w-full max-w-4xl z-10">
+                        {screen === 'welcome' && <WelcomeScreen onStart={start} />}
+                        {screen === 'game' && <GameScreen mode={mode} onEnd={end} />}
+                        {screen === 'result' && <ResultScreen result={result} onRestart={() => setScreen('welcome')} />}
+                    </main>
+
+                    <footer className="fixed bottom-4 text-xs font-medium text-apple-400 dark:text-apple-600 text-center w-full pointer-events-none">
+                        Designed with  style
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
